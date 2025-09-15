@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speda - CRUD Mahasiswa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Optional: Custom styles for a better dark mode experience */
+        .form-control::placeholder {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body class="bg-dark text-white">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Speda</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Daftar Mahasiswa</h2>
+            <button class="btn btn-primary" id="addMahasiswaBtn">Tambah Mahasiswa</button>
+        </div>
+
+        <div class="d-flex mb-4">
+            <input class="form-control me-2 bg-dark text-white" type="search" id="searchInput" placeholder="Cari Mahasiswa berdasarkan NIM..." aria-label="Search">
+            <button class="btn btn-outline-light" type="button" id="searchBtn">Cari</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th scope="col">No</th>
+                        <th scope="col">NIM</th>
+                        <th scope="col">Nama</th>
+                        <th scope="col">Jenis Kelamin</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="mahasiswaList">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Tambah Mahasiswa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="mahasiswaForm">
+                        <input type="hidden" id="mahasiswaIndex">
+                        <div class="mb-3">
+                            <label for="nim" class="form-label">NIM</label>
+                            <input type="text" class="form-control bg-dark text-white" id="nim" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="nama" class="form-label">Nama</label>
+                            <input type="text" class="form-control bg-dark text-white" id="nama" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jenis Kelamin</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="jenisKelamin" id="lakiLaki" value="Laki-Laki">
+                                <label class="form-check-label" for="lakiLaki">Laki-Laki</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="jenisKelamin" id="perempuan" value="Perempuan">
+                                <label class="form-check-label" for="perempuan">Perempuan</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveBtn">Simpan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hapus Data</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Apakah anda yakin ingin menghapus data mahasiswa ini?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Hapus</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="searchResultModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hasil Pencarian</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="searchResultBody">
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Data awal (Hardcoded)
+            let mahasiswaData = [
+                { nim: '123200108', nama: 'Firmannista Ramadhiane', gender: 'Laki-Laki' },
+                { nim: '123210111', nama: 'Varcaster Arie', gender: 'Laki-Laki' },
+                { nim: '124210011', nama: 'Puan Maharani', gender: 'Perempuan' }
+            ];
+
+            // Inisialisasi Modal Bootstrap
+            const formModal = new bootstrap.Modal(document.getElementById('formModal'));
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            const searchResultModal = new bootstrap.Modal(document.getElementById('searchResultModal'));
+            
+            // Variabel Global
+            const mahasiswaList = document.getElementById('mahasiswaList');
+            const saveBtn = document.getElementById('saveBtn');
+            let indexToDelete = -1;
+
+            // --- FUNGSI UTAMA ---
+
+            // Fungsi untuk menampilkan data ke tabel
+            const renderTable = () => {
+                mahasiswaList.innerHTML = '';
+                mahasiswaData.forEach((mhs, index) => {
+                    const row = `
+                        <tr>
+                            <th scope="row">${index + 1}</th>
+                            <td>${mhs.nim}</td>
+                            <td>${mhs.nama}</td>
+                            <td>${mhs.gender}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="showUpdateModal(${index})">Update</button>
+                                <button class="btn btn-danger btn-sm" onclick="showDeleteModal(${index})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    mahasiswaList.innerHTML += row;
+                });
+            };
+
+            // Fungsi untuk menampilkan modal tambah
+            const showAddModal = () => {
+                document.getElementById('mahasiswaForm').reset();
+                document.getElementById('modalTitle').textContent = 'Tambah Mahasiswa';
+                document.getElementById('mahasiswaIndex').value = '';
+                document.getElementById('nim').disabled = false;
+                formModal.show();
+            };
+
+            // Fungsi untuk menampilkan modal update
+            window.showUpdateModal = (index) => {
+                const mhs = mahasiswaData[index];
+                document.getElementById('modalTitle').textContent = 'Update Mahasiswa';
+                document.getElementById('mahasiswaIndex').value = index;
+                document.getElementById('nim').value = mhs.nim;
+                document.getElementById('nim').disabled = true; // NIM tidak bisa diubah
+                document.getElementById('nama').value = mhs.nama;
+                
+                if (mhs.gender === 'Laki-Laki') {
+                    document.getElementById('lakiLaki').checked = true;
+                } else {
+                    document.getElementById('perempuan').checked = true;
+                }
+                formModal.show();
+            };
+
+            // Fungsi untuk menampilkan modal konfirmasi hapus
+            window.showDeleteModal = (index) => {
+                indexToDelete = index;
+                deleteModal.show();
+            };
+
+            // --- EVENT LISTENERS ---
+
+            // Tombol 'Tambah Mahasiswa'
+            document.getElementById('addMahasiswaBtn').addEventListener('click', showAddModal);
+
+            // Tombol 'Simpan' di modal (untuk Add dan Update)
+            saveBtn.addEventListener('click', () => {
+                const index = document.getElementById('mahasiswaIndex').value;
+                const nim = document.getElementById('nim').value.trim();
+                const nama = document.getElementById('nama').value.trim();
+                const gender = document.querySelector('input[name="jenisKelamin"]:checked').value;
+
+                if (!nim || !nama) {
+                    alert('NIM dan Nama tidak boleh kosong!');
+                    return;
+                }
+
+                // Logika membedakan Add dan Update
+                if (index === '') { // Jika index kosong, berarti TAMBAH data baru
+                    if (mahasiswaData.some(mhs => mhs.nim === nim)) {
+                        alert('NIM sudah terdaftar. Gunakan NIM lain.');
+                        return;
+                    }
+                    mahasiswaData.push({ nim, nama, gender });
+                } else { // Jika index ada, berarti UPDATE data
+                    mahasiswaData[index] = { nim, nama, gender };
+                }
+
+                renderTable();
+                formModal.hide();
+            });
+
+            // Tombol 'Hapus' di modal konfirmasi
+            document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+                if (indexToDelete > -1) {
+                    mahasiswaData.splice(indexToDelete, 1);
+                    renderTable();
+                    deleteModal.hide();
+                    indexToDelete = -1;
+                }
+            });
+
+            // Tombol 'Cari'
+            document.getElementById('searchBtn').addEventListener('click', () => {
+                const searchTerm = document.getElementById('searchInput').value.trim();
+                const searchResultBody = document.getElementById('searchResultBody');
+                
+                if (!searchTerm) {
+                    searchResultBody.innerHTML = '<p>Silakan masukkan NIM untuk mencari.</p>';
+                    searchResultModal.show();
+                    return;
+                }
+
+                const result = mahasiswaData.find(mhs => mhs.nim === searchTerm);
+
+                if (result) {
+                    searchResultBody.innerHTML = `
+                        <h5>Data Ditemukan</h5>
+                        <p><strong>NIM:</strong> ${result.nim}</p>
+                        <p><strong>Nama:</strong> ${result.nama}</p>
+                        <p><strong>Jenis Kelamin:</strong> ${result.gender}</p>
+                    `;
+                } else {
+                    searchResultBody.innerHTML = `<p>Mahasiswa dengan NIM "${searchTerm}" tidak ditemukan.</p>`;
+                }
+                searchResultModal.show();
+            });
+
+            // Tampilkan data saat halaman pertama kali dimuat
+            renderTable();
+        });
+    </script>
+</body>
+</html>
